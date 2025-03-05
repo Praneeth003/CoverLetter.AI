@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 
 export default function CoverLetter() {
@@ -7,39 +6,48 @@ export default function CoverLetter() {
 
   const handleGenerate = async () => {
     setLoading(true);
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const activeTabId = tabs[0]?.id;
+      
       if (!activeTabId) {
-        setResult("No active tab found");
-        setLoading(false);
-        return;
+        throw new Error("No active tab found");
       }
-      chrome.tabs.sendMessage(activeTabId, { action: "getPageContent" }, async (response) => {
-        if (chrome.runtime.lastError) {
-          setResult("Error: " + chrome.runtime.lastError.message);
-          setLoading(false);
-          return;
-        }
-        const pageContent = response.content;
-        try {
-          const res = await fetch("/api/generateCoverLetter", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: pageContent })
-          });
-          const data = await res.json();
-          setResult(data.coverLetter || "No cover letter generated.");
-        } catch (error) {
-          setResult("Error generating cover letter.");
-        }
-        setLoading(false);
+
+      // Ensure content script is injected
+      await chrome.scripting.executeScript({
+        target: { tabId: activeTabId },
+        files: ['content.js']
       });
-    });
+
+      // Use Promise wrapper for chrome.tabs.sendMessage
+      const response = await new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(activeTabId, { action: "getPageContent" }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      const typedResponse = response as { content: string };
+      setResult("Cover letter generated is: " + typedResponse.content);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate cover letter";
+      setResult("Error: " + errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
-      <button onClick={handleGenerate} disabled={loading} style={{ padding: "8px 16px", cursor: "pointer" }}>
+      <button 
+        onClick={handleGenerate} 
+        disabled={loading} 
+        style={{ padding: "8px 16px", cursor: "pointer" }}
+      >
         {loading ? "Generating..." : "Generate Cover Letter"}
       </button>
       <div style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}>{result}</div>
