@@ -20,7 +20,7 @@ export default function CoverLetter() {
         files: ['content.js']
       });
 
-      // Use Promise wrapper for chrome.tabs.sendMessage
+      // Use a JavaScript Promise for chrome.tabs.sendMessage
       const response = await new Promise((resolve, reject) => {
         chrome.tabs.sendMessage(activeTabId, { action: "getPageContent" }, (response) => {
           if (chrome.runtime.lastError) {
