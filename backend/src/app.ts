@@ -13,6 +13,7 @@ const openai = new OpenAI({
 });
 
 const prompt: string = process.env.PROMPT;
+console.log(prompt);
 
 
 
