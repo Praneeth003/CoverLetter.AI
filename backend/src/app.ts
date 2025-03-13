@@ -12,8 +12,8 @@ const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const findJobDescriptionPrompt: string = process.env.PROMPT1 || '';
-const coverLetterGenerationPrompt: string = process.env.PROMPT2 || '';
+const prompt: string = process.env.PROMPT || '';
+const resumeText: string = ``;
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World!');
@@ -25,6 +25,7 @@ app.post(
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const inputContent: string = req.body.content;
+            console.log('inputContent:', inputContent);
 
             // Check if the content has some job description or not
             if (!inputContent) {
@@ -32,7 +33,7 @@ app.post(
                 return;
             }
 
-            if (!findJobDescriptionPrompt || !process.env.MODEL_NAME) {
+            if (!prompt || !process.env.MODEL_NAME) {
                 res.status(400).json({ message: 'Configuration error: Missing prompt or model name' });
                 return;
             }
@@ -42,16 +43,16 @@ app.post(
                 messages: [
                     {
                         role: 'system',
-                        content: findJobDescriptionPrompt
+                        content: prompt
                     },
                     {
                         role: 'user',
-                        content: inputContent
+                        content: `Job Posting:\n${inputContent}\n\nResume:\n${resumeText}`
                     }
                 ]
             });
 
-            res.status(200).json(response);
+            res.status(200).json({ content: response.choices[0].message.content });
         } catch (error) {
             next(error);
         }
