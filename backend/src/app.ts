@@ -27,7 +27,7 @@ app.post(
             const inputContent: string = req.body.content;
             console.log('inputContent:', inputContent);
 
-            // Check if the content has some job description or not
+            // Check if there is any content to generate a cover letter
             if (!inputContent) {
                 res.status(400).json({ message: 'The extension could not read anything on the screen!!' });
                 return;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+
 export default function CoverLetter() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,12 +46,12 @@ export default function CoverLetter() {
     <div>
       <button 
         onClick={handleGenerate} 
-        disabled={loading} 
-        style={{ padding: "8px 16px", cursor: "pointer" }}
+        disabled={loading}
+        className="cover-letter-button"
       >
-        {loading ? "Generating..." : "Generate Cover Letter"}
+        {loading ? "Generating..." : "Generate Cove Letter"}
       </button>
-      <div style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}>{result}</div>
+      <div className="cover-letter-container">{result}</div>
     </div>
   );
 }

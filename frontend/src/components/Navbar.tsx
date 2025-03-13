@@ -5,29 +5,27 @@ interface NavbarProps {
 
 export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   return (
-    <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid #ccc", paddingBottom: "8px" }}>
+    <div className="flex gap-4 border-b border-gray-300 pb-2">
       <button
         onClick={() => setActiveTab("coverLetter")}
-        style={{
-          background: activeTab === "coverLetter" ? "#0070f3" : "#fff",
-          color: activeTab === "coverLetter" ? "#fff" : "#000",
-          border: "1px solid #0070f3",
-          padding: "8px 16px",
-          cursor: "pointer"
-        }}
+        className={`
+          px-4 py-2 rounded-md border border-blue-600 transition-colors
+          ${activeTab === 'coverLetter' 
+            ? 'bg-blue-600 text-white' 
+            : 'bg-white text-black hover:bg-blue-100'}
+        `}
       >
         Generate Cover Letter
       </button>
 
       <button
         onClick={() => setActiveTab("userProfile")}
-        style={{
-          background: activeTab === "userProfile" ? "#0070f3" : "#fff",
-          color: activeTab === "userProfile" ? "#fff" : "#000",
-          border: "1px solid #0070f3",
-          padding: "8px 16px",
-          cursor: "pointer"
-        }}
+        className={`
+          px-4 py-2 rounded-md border border-blue-600 transition-colors
+          ${activeTab === 'userProfile' 
+            ? 'bg-blue-600 text-white' 
+            : 'bg-white text-black hover:bg-blue-100'}
+        `}
       >
         User Profile
       </button>
