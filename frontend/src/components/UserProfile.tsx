@@ -1,44 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function UserProfile() {
-  const [resume, setResume] = useState<File | null>(null);
+  const [resume, setResume] = useState<string | null>(null);
   const [storedResume, setStoredResume] = useState<string | null>(null);
+  const keepAliveRef = useRef<number | null>(null);
 
-  // Load stored resume on component mount
+  // Keep extension context alive
   useEffect(() => {
-    chrome.storage.local.get(['resume'], (result) => {
-      if (result.resume) {
-        setStoredResume(result.resume);
-      }
-    });
+    keepAliveRef.current = setInterval(() => {
+      chrome.runtime.sendMessage({ type: "KEEP_ALIVE" });
+    }, 15000);
+
+    return () => {
+      if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+    };
   }, []);
 
-  const handleResumeChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      setResume(file);
+  // Load stored resume
+  useEffect(() => {
+    chrome.runtime.sendMessage(
+      { type: "GET_RESUME" },
+      (response) => {
+        if (response?.success && response.data) {
+          setStoredResume(response.data);
+          setResume(response.data);
+        }
+      }
+    );
+  }, []);
 
-      // Convert file to Base64
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64Data = reader.result as string;
-        
-        // Store in Chrome's local storage
-        chrome.storage.local.set({ resume: base64Data }, () => {
-          console.log('Resume saved locally');
-          setStoredResume(base64Data);
-        });
-      };
-    }
+  const handleResumeChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newResume = event.target.value;
+    setResume(newResume);
+
+    chrome.runtime.sendMessage(
+      { type: "STORE_RESUME", data: newResume },
+      (response) => {
+        if (response?.success) {
+          setStoredResume(newResume);
+        }
+      }
+    );
   };
 
   const handleRemoveResume = () => {
-    chrome.storage.local.remove('resume', () => {
-      setResume(null);
-      setStoredResume(null);
-      console.log('Resume removed');
-    });
+    chrome.runtime.sendMessage(
+      { type: "REMOVE_RESUME" },
+      (response) => {
+        if (response?.success) {
+          setResume(null);
+          setStoredResume(null);
+        }
+      }
+    );
   };
 
   return (
@@ -46,17 +60,11 @@ export default function UserProfile() {
       <h1 className="text-2xl font-bold mb-4">User Profile</h1>
       <div className="mb-4">
         <label className="block mb-2 font-medium">
-          Upload Resume (PDF or DOC):
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx"
+          Enter Resume:
+          <textarea
+            value={resume || ''}
             onChange={handleResumeChange}
-            className="block w-full mt-1 text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-full file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100"
+            className="w-full h-40 p-2 border border-gray-300 rounded"
           />
         </label>
       </div>
@@ -64,16 +72,10 @@ export default function UserProfile() {
       {storedResume && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <p className="text-sm font-medium">
-            Stored Resume: {resume?.name || 'resume-file'}
+            Stored Resume:
           </p>
+          <pre className="whitespace-pre-wrap">{storedResume}</pre>
           <div className="mt-2 flex gap-2">
-            <a
-              href={storedResume}
-              download="resume"
-              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
-            >
-              Download
-            </a>
             <button
               onClick={handleRemoveResume}
               className="px-3 py-1 text-sm text-red-600 hover:text-red-800"

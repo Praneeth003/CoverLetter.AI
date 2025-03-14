@@ -6,6 +6,10 @@
   "action": {
     "default_popup": "index.html"
   },
+  "options_ui": {
+    "page": "index.html",
+    "open_in_tab": false
+  },
   "permissions": ["activeTab", "scripting", "storage", "unlimitedStorage"],
   "background": {
     "service_worker": "background.js"
