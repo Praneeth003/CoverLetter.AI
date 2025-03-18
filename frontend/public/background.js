@@ -1,14 +1,19 @@
 // Keep service worker alive to prevent it from being killed by the browser
-let keepAliveTimer;
+const KEEP_ALIVE_ALARM_NAME = "keepAliveAlarm";
 
 const setupKeepAlive = () => {
-  const resetTimer = () => {
-    keepAliveTimer = setTimeout(() => {
-      chrome.runtime.sendMessage({ type: "KEEP_ALIVE" });
-      resetTimer();
-    }, 25000);
-  };
-  resetTimer();
+  // Create an alarm that fires every 25 seconds
+  chrome.alarms.create(KEEP_ALIVE_ALARM_NAME, {
+    periodInMinutes: 25/60 // Convert seconds to minutes
+  });
+  
+  // Listen for the alarm
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === KEEP_ALIVE_ALARM_NAME) {
+      console.log("Keep-alive ping");
+      // Do any maintenance tasks here if needed
+    }
+  });
 };
 
 // Message handling
@@ -63,6 +68,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Initial setup
 setupKeepAlive();
+
+// Clean up on suspend
 chrome.runtime.onSuspend.addListener(() => {
-  clearTimeout(keepAliveTimer);
+  chrome.alarms.clear(KEEP_ALIVE_ALARM_NAME);
 });
