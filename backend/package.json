@@ -21,6 +21,7 @@
     "openai": "^4.86.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
     "ts-node-dev": "^2.0.0",

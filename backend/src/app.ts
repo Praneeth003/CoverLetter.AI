@@ -1,10 +1,11 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import { OpenAI } from 'openai';
+import cors from 'cors';
 
 const app: Express = express();
 dotenv.config();
-
+app.use(cors());
 app.use(express.json());
 
 // OpenAI Configuration
@@ -13,7 +14,7 @@ const client = new OpenAI({
 });
 
 const prompt: string = process.env.PROMPT || '';
-const resumeText: string = ``;
+
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World!');
@@ -25,11 +26,16 @@ app.post(
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const inputContent: string = req.body.content;
-            console.log('inputContent:', inputContent);
+            const resume: string = req.body.resume;
+            console.log('inputContent:', inputContent, 'resume:', resume);
 
             // Check if there is any content to generate a cover letter
             if (!inputContent) {
                 res.status(400).json({ message: 'The extension could not read anything on the screen!!' });
+                return;
+            }
+            if (!resume) {
+                res.status(400).json({ message: 'No resume content is found' });
                 return;
             }
 
@@ -47,7 +53,7 @@ app.post(
                     },
                     {
                         role: 'user',
-                        content: `Job Posting:\n${inputContent}\n\nResume:\n${resumeText}`
+                        content: `Job Posting:\n${inputContent}\n\nResume:\n${resume}`
                     }
                 ]
             });
