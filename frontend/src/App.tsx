@@ -4,12 +4,12 @@ import CoverLetter from "./components/CoverLetter";
 import UserProfile from "./components/UserProfile";
 
 export default function Popup() {
-  const [activeTab, setActiveTab] = useState<"coverLetter" | "userProfile">("coverLetter");
+  const [activeTab, setActiveTab] = useState<"coverLetter" | "userProfile">("userProfile");
 
   return (
-    <div style={{ padding: "16px", fontFamily: "Arial, sans-serif" }}>
+    <div className="p-4 font-sans">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div style={{ marginTop: "16px" }}>
+      <div className="mt-4">
         {activeTab === "coverLetter" ? <CoverLetter /> : <UserProfile />}
       </div>
     </div>
