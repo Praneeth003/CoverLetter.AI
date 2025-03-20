@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 
-
 export default function CoverLetter() {
   const [coverLetter, setCoverLetter] = useState("");
+  const [originalCoverLetter, setOriginalCoverLetter] = useState("");
   const [resume, setResume] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [isRevising, setIsRevising] = useState(false);
+  const [revisionInstructions, setRevisionInstructions] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [viewingOriginal, setViewingOriginal] = useState(false);
   
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -18,7 +21,6 @@ export default function CoverLetter() {
       }
     });
   }, []);
-
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -50,14 +52,14 @@ export default function CoverLetter() {
 
       const contentOnScreen = (response as { content: string });
       console.log('contentOnScreen:', contentOnScreen);
-
-
+      
+      // Store job description for potential revisions
+      setJobDescription(contentOnScreen.content);
       
       if (!contentOnScreen) {
         throw new Error("Could not read anything on the screen");
       }
       
-
       if (!resume) {
         throw new Error("Please add your resume in the User Profile tab before generating a cover letter");
       }
@@ -88,7 +90,10 @@ export default function CoverLetter() {
         throw new Error("The resume provided does not seem to be a valid resume!!");
       }
       
-      setCoverLetter(parsedData?.cover_letter);
+      const newCoverLetter = parsedData?.cover_letter;
+      setCoverLetter(newCoverLetter);
+      setOriginalCoverLetter(newCoverLetter);
+      setViewingOriginal(false);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to generate cover letter";
@@ -97,6 +102,56 @@ export default function CoverLetter() {
       setLoading(false);
     }
   };
+
+  const handleRevise = async () => {
+    if (!revisionInstructions) {
+      setError("Please provide revision instructions");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      const apiResponse = await fetch(`${serverUrl}/reviseCoverLetter`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ 
+          existingCoverLetter: coverLetter, 
+          revisionInstructions, 
+          resume, 
+          jobDescription 
+        })
+      });
+
+      if (!apiResponse.ok) {
+        throw new Error("Failed to revise cover letter");
+      }
+      
+      const data = await apiResponse.json();
+      const parsedData = JSON.parse(data.content);
+      
+      setCoverLetter(parsedData?.cover_letter);
+      setViewingOriginal(false);
+      setIsRevising(false);
+      setRevisionInstructions("");
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to revise cover letter";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleView = () => {
+    setViewingOriginal(!viewingOriginal);
+  };
+
+  const displayedCoverLetter = viewingOriginal ? originalCoverLetter : coverLetter;
+  const hasRevision = coverLetter !== originalCoverLetter;
 
   return (
      <div className="p-4">
@@ -115,20 +170,78 @@ export default function CoverLetter() {
           {loading ? "Generating..." : "Generate Cover Letter"}
         </button>
       ) : (
-        <button 
-          onClick={() => setCoverLetter("")}
-          className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700"
-        >
-          Revise
-        </button>
+        <div>
+          {!isRevising ? (
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsRevising(true)}
+                className="flex-1 py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Revise
+              </button>
+              <button 
+                onClick={() => {
+                  setCoverLetter("");
+                  setOriginalCoverLetter("");
+                  setViewingOriginal(false);
+                }}
+                className="py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Start Over
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <textarea
+                value={revisionInstructions}
+                onChange={(e) => setRevisionInstructions(e.target.value)}
+                className="w-full p-2 border rounded mb-2"
+                rows={3}
+                placeholder="Enter your revision instructions here (e.g., 'Make it more formal', 'Focus more on my leadership skills')"
+              />
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleRevise}
+                  disabled={loading}
+                  className="flex-1 py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {loading ? "Revising..." : "Apply Changes"}
+                </button>
+                <button 
+                  onClick={() => setIsRevising(false)}
+                  className="py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
       
       {error && <div className="mt-4 p-3 bg-red-100 border border-red-400 rounded text-sm">{error}</div>}
       
       {coverLetter && (
         <div className="mt-4">
-          <h3 className="text-lg font-medium mb-2">Generated Cover Letter:</h3>
-          <div className="p-3 border rounded bg-white whitespace-pre-wrap">{coverLetter}</div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-medium">Generated Cover Letter:</h3>
+            {hasRevision && (
+              <button
+                onClick={toggleView}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {viewingOriginal ? "Show Current Version" : "Show Original"}
+              </button>
+            )}
+          </div>
+          <div className="p-3 border rounded bg-white whitespace-pre-wrap">
+            {displayedCoverLetter}
+          </div>
+          {viewingOriginal && hasRevision && (
+            <div className="mt-2 text-sm text-gray-600">
+              You are viewing the original cover letter. Click "Show Current Version" to see your revisions.
+            </div>
+          )}
         </div>
       )}
     </div>
