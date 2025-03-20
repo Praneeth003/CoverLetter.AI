@@ -13,7 +13,8 @@ const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const prompt: string = process.env.PROMPT || '';
+const prompt1: string = process.env.COVERLETTER_GENERATION_PROMPT || '';
+const prompt2: string = process.env.REVISION_PROMPT || '';
 
 
 app.get('/', (req: Request, res: Response) => {
@@ -50,7 +51,7 @@ app.post(
                 messages: [
                     {
                         role: 'system',
-                        content: prompt
+                        content: prompt1
                     },
                     {
                         role: 'user',
@@ -86,7 +87,7 @@ app.post(
                 return;
             }
 
-            if (!prompt || !process.env.MODEL_NAME) {
+            if (!prompt2 || !process.env.MODEL_NAME) {
                 res.status(400).json({ message: 'Configuration error: Missing prompt or model name' });
                 return;
             }
@@ -96,7 +97,7 @@ app.post(
                 messages: [
                     {
                         role: 'system',
-                        content: `${prompt}\n\nYou are now in revision mode. Your task is to revise an existing cover letter based on the user's instructions.`
+                        content: prompt2
                     },
                     {
                         role: 'user',

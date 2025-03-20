@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState} from "react";
 
 interface CoverLetterProps {
   coverLetter: string;
@@ -147,17 +147,38 @@ export default function CoverLetter({
       
       const data = await apiResponse.json();
 
-      // Safely parse the JSON data
-      let parsedData;
+      // For the revision endpoint, process the response according to expected format
+      let revisedCoverLetter;
       try {
-        // Check if data.content is already a valid object or needs parsing
-        parsedData = typeof data.content === 'object' ? data.content : JSON.parse(data.content);
+        // If content is already an object
+        if (typeof data.content === 'object') {
+          revisedCoverLetter = data.content.modified_cover_letter || data.content.cover_letter;
+        } else {
+          // Try parsing as JSON to see if we get an object with modified_cover_letter
+          try {
+            const parsed = JSON.parse(data.content);
+            
+            if (!parsed.is_valid) {
+              throw new Error("The revision instructions are not valid for a professional cover letter");
+            }
+            
+            revisedCoverLetter = parsed.modified_cover_letter || parsed.cover_letter || data.content;
+          } catch (parseError) {
+            // If parsing fails, use the content directly as the cover letter
+            revisedCoverLetter = data.content;
+          }
+        }
+        
+        if (!revisedCoverLetter) {
+          throw new Error("No valid cover letter content was returned");
+        }
+        
       } catch (parseError) {
-        console.error("Error parsing JSON:", parseError);
+        console.error("Error processing response:", parseError);
         throw new Error("Failed to process the response from server");
       }
       
-      setCoverLetter(parsedData?.cover_letter);
+      setCoverLetter(revisedCoverLetter);
       setViewingOriginal(false);
       setIsRevising(false);
       setRevisionInstructions("");
