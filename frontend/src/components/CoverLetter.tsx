@@ -54,12 +54,12 @@ export default function CoverLetter() {
 
       
       if (!contentOnScreen) {
-        throw new Error("No page content found");
+        throw new Error("Could not read anything on the screen");
       }
       
 
       if (!resume) {
-        throw new Error("No resume content found");
+        throw new Error("Please add your resume in the User Profile tab before generating a cover letter");
       }
 
       // Send an API request
@@ -76,7 +76,19 @@ export default function CoverLetter() {
       }
       
       const data = await apiResponse.json();
-      setCoverLetter(data.content); // Backend returns { content: ... }
+      const parsedData = JSON.parse(data.content);
+
+      if(parsedData?.is_job_description === false){
+        console.log("The extension could not find a valid job description on the current tab!!");
+        throw new Error("The extension could not find a valid job description on current tab!!");
+      }
+      
+      if(parsedData?.is_resume === false){
+        console.log("The resume provided does not seem to be valid!!");
+        throw new Error("The resume provided does not seem to be a valid resume!!");
+      }
+      
+      setCoverLetter(parsedData?.cover_letter);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to generate cover letter";
@@ -94,13 +106,22 @@ export default function CoverLetter() {
         </div>
       )}
       
-      <button 
-        onClick={handleGenerate} 
-        disabled={loading || !resume}
-        className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-      >
-        {loading ? "Generating..." : "Generate Cover Letter"}
-      </button>
+      {!coverLetter ? (
+        <button 
+          onClick={handleGenerate} 
+          disabled={!resume || loading}
+          className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+        >
+          {loading ? "Generating..." : "Generate Cover Letter"}
+        </button>
+      ) : (
+        <button 
+          onClick={() => setCoverLetter("")}
+          className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700"
+        >
+          Revise
+        </button>
+      )}
       
       {error && <div className="mt-4 p-3 bg-red-100 border border-red-400 rounded text-sm">{error}</div>}
       
