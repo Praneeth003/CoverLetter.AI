@@ -1,26 +1,32 @@
 import { useState, useEffect } from "react";
 
-export default function CoverLetter() {
-  const [coverLetter, setCoverLetter] = useState("");
-  const [originalCoverLetter, setOriginalCoverLetter] = useState("");
-  const [resume, setResume] = useState(""); 
+interface CoverLetterProps {
+  coverLetter: string;
+  setCoverLetter: (letter: string) => void;
+  originalCoverLetter: string;
+  setOriginalCoverLetter: (letter: string) => void;
+  jobDescription: string;
+  setJobDescription: (description: string) => void;
+  resume: string;
+}
+
+export default function CoverLetter({
+  coverLetter,
+  setCoverLetter,
+  originalCoverLetter,
+  setOriginalCoverLetter,
+  jobDescription,
+  setJobDescription,
+  resume
+}: CoverLetterProps) {
+  // Keep only local state variables
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRevising, setIsRevising] = useState(false);
   const [revisionInstructions, setRevisionInstructions] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
   const [viewingOriginal, setViewingOriginal] = useState(false);
   
   const serverUrl = import.meta.env.VITE_SERVER_URL;
-
-  // Load the saved resume when the component mounts
-  useEffect(() => {
-    chrome.runtime.sendMessage({ type: "GET_RESUME" }, (response) => {
-      if (response.success) {
-        setResume(response.resume);
-      }
-    });
-  }, []);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -78,7 +84,16 @@ export default function CoverLetter() {
       }
       
       const data = await apiResponse.json();
-      const parsedData = JSON.parse(data.content);
+
+      // Safely parse the JSON data
+      let parsedData;
+      try {
+        // Check if data.content is already a valid object or needs parsing
+        parsedData = typeof data.content === 'object' ? data.content : JSON.parse(data.content);
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+        throw new Error("Failed to process the response from server");
+      }
 
       if(parsedData?.is_job_description === false){
         console.log("The extension could not find a valid job description on the current tab!!");
@@ -131,7 +146,16 @@ export default function CoverLetter() {
       }
       
       const data = await apiResponse.json();
-      const parsedData = JSON.parse(data.content);
+
+      // Safely parse the JSON data
+      let parsedData;
+      try {
+        // Check if data.content is already a valid object or needs parsing
+        parsedData = typeof data.content === 'object' ? data.content : JSON.parse(data.content);
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+        throw new Error("Failed to process the response from server");
+      }
       
       setCoverLetter(parsedData?.cover_letter);
       setViewingOriginal(false);

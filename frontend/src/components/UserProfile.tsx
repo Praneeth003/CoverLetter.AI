@@ -1,26 +1,22 @@
 import { useState, useEffect } from "react";
 
-export default function UserProfile() {
-  const [resumeText, setResumeText] = useState("");
+interface UserProfileProps {
+  resume: string;
+  setResume: (text: string) => void;
+}
+
+export default function UserProfile({ resume, setResume }: UserProfileProps) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  // Load saved resume on component mount
+  // Set initial save status based on if resume exists
   useEffect(() => {
-    chrome.runtime.sendMessage(
-      { type: "GET_RESUME" },
-      (response) => {
-        if (response.success) {
-          setResumeText(response.resume);
-          setSaveStatus(response.resume ? "saved" : "idle");
-        }
-      }
-    );
-  }, []);
+    setSaveStatus(resume ? "saved" : "idle");
+  }, [resume]);
 
   const handleSave = () => {
     setSaveStatus("saving");
     chrome.runtime.sendMessage(
-      { type: "UPDATE_RESUME", text: resumeText },
+      { type: "UPDATE_RESUME", text: resume },
       (response) => {
         if (response.success) {
           setSaveStatus("saved");
@@ -37,7 +33,7 @@ export default function UserProfile() {
       { type: "CLEAR_RESUME" },
       (response) => {
         if (response.success) {
-          setResumeText("");
+          setResume("");
           setSaveStatus("idle");
         }
       }
@@ -52,9 +48,9 @@ export default function UserProfile() {
         <label className="block mb-2 font-medium">
           Resume Content:
           <textarea
-            value={resumeText}
+            value={resume}
             onChange={(e) => {
-              setResumeText(e.target.value);
+              setResume(e.target.value);
               if (saveStatus === "saved") setSaveStatus("idle");
             }}
             className="w-full mt-1 p-3 border rounded-lg h-64 resize-none
